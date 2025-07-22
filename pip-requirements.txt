@@ -1,0 +1,12 @@
+# Alternative requirements.txt format for pip install
+# Install with: pip install -r pip-requirements.txt
+
+Flask==3.1.0
+Werkzeug==3.1.3
+boto3==1.37.37
+botocore
+matplotlib==3.10.1
+reportlab==4.4.0
+pytz==2025.2
+email-validator==2.2.0
+gunicorn==23.0.0
