@@ -1,0 +1,19 @@
+[project]
+name = "repl-nix-workspace"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.11"
+dependencies = [
+    "boto3>=1.37.37",
+    "flask-sqlalchemy>=3.1.1",
+    "flask>=3.1.0",
+    "matplotlib>=3.10.1",
+    "pytz>=2025.2",
+    "reportlab>=4.4.0",
+    "psycopg2-binary>=2.9.10",
+    "email-validator>=2.2.0",
+    "gunicorn>=23.0.0",
+    "botocore>=1.39.9",
+    "sqlalchemy>=2.0.41",
+    "werkzeug>=3.1.3",
+]
