@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ report_type.title() }} Report - {{ account_name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .gradient-text {
+            background: linear-gradient(135deg, #50C7E3 0%, #9D5CBF 50%, #E865A0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .logo-bounce {
+            transition: transform 0.3s ease;
+        }
+        .logo-bounce:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6 fade-in">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800 flex items-center">
+                        {% if report_type == 'billing' %}
+                            <svg class="w-6 h-6 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            </svg>
+                        {% else %}
+                            <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        {% endif %}
+                        {{ report_type.title() }} Report: {{ account_name }}
+                    </h1>
+                    <p class="text-gray-600 mt-1">
+                        {% if report_type == 'billing' %}
+                            {{ billing_period if billing_period else 'Billing Report' }}
+                        {% else %}
+                            Resource Utilization Analysis
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="downloadPDF()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Download PDF
+                    </button>
+                    <a href="/" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        Back
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {% if report_type == 'billing' %}
+            <!-- Billing Report Content -->
+            {% if billing_data and billing_data.total_cost > 0 %}
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white rounded-lg shadow-md p-6 text-center fade-in">
+                        <div class="text-green-600 text-2xl mb-2">💰</div>
+                        <h3 class="text-2xl font-bold text-green-600">${{ "%.2f"|format(billing_data.total_cost) }}</h3>
+                        <p class="text-gray-600">Total Cost</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-md p-6 text-center fade-in">
+                        <div class="text-blue-600 text-2xl mb-2">📅</div>
+                        <h3 class="text-lg font-bold text-blue-600">{{ billing_period if billing_period else 'N/A' }}</h3>
+                        <p class="text-gray-600">Billing Period</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-md p-6 text-center fade-in">
+                        <div class="text-yellow-600 text-2xl mb-2">⚙️</div>
+                        <h3 class="text-2xl font-bold text-yellow-600">{{ billing_data.services|length if billing_data.services else 0 }}</h3>
+                        <p class="text-gray-600">Services Used</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-md p-6 text-center fade-in">
+                        <div class="text-purple-600 text-2xl mb-2">👤</div>
+                        <h3 class="text-lg font-bold text-purple-600">{{ account_name }}</h3>
+                        <p class="text-gray-600">Client</p>
+                    </div>
+                </div>
+
+                <!-- Service Breakdown -->
+                <div class="bg-white rounded-lg shadow-md p-6 fade-in">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+                        </svg>
+                        Service Breakdown
+                    </h2>
+                    
+                    {% if billing_data.services %}
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full table-auto">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Cost (USD)</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Visual</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    {% for service in billing_data.services %}
+                                        {% set percentage = (service.amount / billing_data.total_cost * 100) if billing_data.total_cost > 0 else 0 %}
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-4 text-sm font-medium text-gray-900">{{ service.service }}</td>
+                                            <td class="px-4 py-4 text-sm text-right">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    ${{ "%.2f"|format(service.amount) }}
+                                                </span>
+                                            </td>
+                                            <td class="px-4 py-4 text-sm text-gray-500 text-right">{{ "%.1f"|format(percentage) }}%</td>
+                                            <td class="px-4 py-4 text-sm text-right">
+                                                <div class="w-24 bg-gray-200 rounded-full h-2">
+                                                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ percentage }}%"></div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-sm font-bold text-gray-900">TOTAL</th>
+                                        <th class="px-4 py-3 text-right">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                ${{ "%.2f"|format(billing_data.total_cost) }}
+                                            </span>
+                                        </th>
+                                        <th class="px-4 py-3 text-right text-sm font-bold text-gray-900">100.0%</th>
+                                        <th class="px-4 py-3 text-right">
+                                            <div class="w-24 bg-gray-200 rounded-full h-2">
+                                                <div class="bg-yellow-600 h-2 rounded-full" style="width: 100%"></div>
+                                            </div>
+                                        </th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <!-- Chart -->
+                        <div class="mt-8 flex justify-center">
+                            <div class="w-full max-w-md">
+                                <canvas id="costChart" width="400" height="400"></canvas>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-8">
+                            <div class="text-yellow-500 text-4xl mb-4">⚠️</div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No Billing Data Found</h3>
+                            <p class="text-gray-500">No costs were recorded for the selected billing period.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="bg-white rounded-lg shadow-md p-8 text-center fade-in">
+                    <div class="text-yellow-500 text-6xl mb-4">⚠️</div>
+                    <h3 class="text-xl font-medium text-gray-900 mb-4">No Billing Data Available</h3>
+                    <p class="text-gray-500 mb-4">No costs were recorded for the selected billing period.</p>
+                    <a href="/" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Generate New Report</a>
+                </div>
+            {% endif %}
+
+        {% else %}
+            <!-- Utilization Report Content -->
+            {% if session.report_data and session.report_data.type == 'utilization' and session.report_data.metrics_data %}
+                {% set report_data = session.report_data %}
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6 fade-in">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Report Summary</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-blue-800">Total Resources</h4>
+                            <p class="text-2xl font-bold text-blue-900">{{ report_data.metrics_data|length }}</p>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-green-800">Report Type</h4>
+                            <p class="text-lg font-semibold text-green-900">{{ report_data.type.title() }}</p>
+                        </div>
+                        <div class="bg-purple-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-purple-800">Frequency</h4>
+                            <p class="text-lg font-semibold text-purple-900">{{ report_data.frequency.title() }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resource Details -->
+                {% for resource in report_data.metrics_data %}
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6 fade-in">
+                    <h3 class="text-lg font-semibold gradient-text mb-4">
+                        <div class="flex items-center">
+                            {% if resource.service_type == 'EC2' %}
+                                <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                                </svg>
+                            {% else %}
+                                <svg class="w-6 h-6 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
+                                </svg>
+                            {% endif %}
+                            {{ resource.name }} ({{ resource.service_type }})
+                        </div>
+                    </h3>
+                    
+                    <!-- Resource Information -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-sm font-medium text-gray-600">Instance ID</span>
+                            <p class="text-sm text-gray-900 font-mono">{{ resource.id }}</p>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-sm font-medium text-gray-600">Type</span>
+                            <p class="text-sm text-gray-900">{{ resource.type }}</p>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-sm font-medium text-gray-600">Region</span>
+                            <p class="text-sm text-gray-900">{{ resource.region }}</p>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-sm font-medium text-gray-600">Status</span>
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                                {% if resource.state == 'running' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ resource.state }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Metrics Charts -->
+                    {% if resource.metrics %}
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {% if resource.metrics.cpu %}
+                                <div class="bg-blue-50 p-4 rounded-lg">
+                                    <h4 class="font-medium text-blue-800 mb-2">CPU Utilization</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between text-sm">
+                                            <span>Average: {{ "%.1f"|format(resource.metrics.cpu.average) }}%</span>
+                                            <span>Max: {{ "%.1f"|format(resource.metrics.cpu.max) }}%</span>
+                                        </div>
+                                        <div class="w-full bg-blue-200 rounded-full h-3">
+                                            <div class="bg-blue-600 h-3 rounded-full transition-all duration-300" 
+                                                 style="width: {{ resource.metrics.cpu.average }}%"></div>
+                                        </div>
+                                        {% if resource.metrics.cpu.average > 80 %}
+                                            <p class="text-xs text-red-600 font-medium">⚠️ High CPU utilization detected</p>
+                                        {% elif resource.metrics.cpu.average > 60 %}
+                                            <p class="text-xs text-yellow-600 font-medium">⚠️ Moderate CPU utilization</p>
+                                        {% else %}
+                                            <p class="text-xs text-green-600 font-medium">✅ Normal CPU utilization</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            {% if resource.metrics.memory %}
+                                <div class="bg-green-50 p-4 rounded-lg">
+                                    <h4 class="font-medium text-green-800 mb-2">Memory Utilization</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between text-sm">
+                                            <span>Average: {{ "%.1f"|format(resource.metrics.memory.average) }}%</span>
+                                            <span>Max: {{ "%.1f"|format(resource.metrics.memory.max) }}%</span>
+                                        </div>
+                                        <div class="w-full bg-green-200 rounded-full h-3">
+                                            <div class="bg-green-600 h-3 rounded-full transition-all duration-300" 
+                                                 style="width: {{ resource.metrics.memory.average }}%"></div>
+                                        </div>
+                                        {% if resource.metrics.memory.average > 85 %}
+                                            <p class="text-xs text-red-600 font-medium">⚠️ High memory utilization detected</p>
+                                        {% elif resource.metrics.memory.average > 70 %}
+                                            <p class="text-xs text-yellow-600 font-medium">⚠️ Moderate memory utilization</p>
+                                        {% else %}
+                                            <p class="text-xs text-green-600 font-medium">✅ Normal memory utilization</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            {% for disk_name, disk_metrics in resource.metrics.items() %}
+                                {% if disk_name.startswith('disk') %}
+                                    <div class="bg-purple-50 p-4 rounded-lg">
+                                        <h4 class="font-medium text-purple-800 mb-2">{{ disk_name.title() }} Usage</h4>
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between text-sm">
+                                                <span>Average: {{ "%.1f"|format(disk_metrics.average) }}%</span>
+                                                <span>Max: {{ "%.1f"|format(disk_metrics.max) }}%</span>
+                                            </div>
+                                            <div class="w-full bg-purple-200 rounded-full h-3">
+                                                <div class="bg-purple-600 h-3 rounded-full transition-all duration-300" 
+                                                     style="width: {{ disk_metrics.average }}%"></div>
+                                            </div>
+                                            {% if disk_metrics.average > 90 %}
+                                                <p class="text-xs text-red-600 font-medium">⚠️ High disk usage detected</p>
+                                            {% elif disk_metrics.average > 75 %}
+                                                <p class="text-xs text-yellow-600 font-medium">⚠️ Moderate disk usage</p>
+                                            {% else %}
+                                                <p class="text-xs text-green-600 font-medium">✅ Normal disk usage</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <p class="text-sm text-yellow-700">No metrics data available for this resource.</p>
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="bg-white rounded-lg shadow-md p-8 text-center fade-in">
+                    <div class="text-blue-500 text-6xl mb-4">📊</div>
+                    <h3 class="text-xl font-medium text-gray-900 mb-4">No Utilization Data Available</h3>
+                    <p class="text-gray-500 mb-4">No utilization report data found. Please generate a utilization report first.</p>
+                    <a href="/" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Generate New Report</a>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <script>
+        // Chart.js for billing visualization
+        {% if report_type == 'billing' and billing_data and billing_data.services %}
+        const ctx = document.getElementById('costChart').getContext('2d');
+        const costChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: [
+                    {% for service in billing_data.services[:10] %}
+                        '{{ service.service }}'{{ "," if not loop.last }}
+                    {% endfor %}
+                ],
+                datasets: [{
+                    data: [
+                        {% for service in billing_data.services[:10] %}
+                            {{ service.amount }}{{ "," if not loop.last }}
+                        {% endfor %}
+                    ],
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                        '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF9F40'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Top 10 Services by Cost',
+                        font: {
+                            size: 16
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+
+        // Download PDF function
+        function downloadPDF() {
+            window.location.href = '/api/download-pdf';
+        }
+    </script>
+</body>
+</html>
